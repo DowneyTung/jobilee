@@ -1,0 +1,80 @@
+// jobs-service owns the pipeline. It knows users only by the uuid the gateway
+// forwards as X-User-Id — there is no FK to auth-service's users table, and no
+// cross-service reads.
+
+generator client {
+  provider = "prisma-client-js"
+  // Each service generates its own client. With the default output they would
+  // all write to the one hoisted node_modules/@prisma/client and clobber each
+  // other — the last `prisma generate` in the workspace would win.
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("JOBS_DATABASE_URL")
+}
+
+enum Stage {
+  SAVED
+  APPLIED
+  RECRUITER_CALL
+  PHONE_SCREEN
+  TECHNICAL
+  ONSITE
+  OFFER
+  REJECTED
+}
+
+enum ArtifactType {
+  RESEARCH
+  INTERVIEW_PREP
+}
+
+model Job {
+  id        String   @id @default(uuid())
+  userId    String
+  company   String
+  title     String
+  location  String?
+  link      String?
+  jd        String   @default("")
+  notes     String   @default("")
+  stage     Stage    @default(SAVED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events    StageEvent[]
+  artifacts JobArtifact[]
+
+  // Every query is scoped by userId, and the board sorts newest-first.
+  @@index([userId, createdAt])
+  @@map("jobs")
+}
+
+model StageEvent {
+  id    String   @id @default(uuid())
+  jobId String
+  stage Stage
+  at    DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, at])
+  @@map("stage_events")
+}
+
+model JobArtifact {
+  id        String       @id @default(uuid())
+  jobId     String
+  type      ArtifactType
+  content   String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  // One current research brief and one current prep sheet per job.
+  @@unique([jobId, type])
+  @@map("job_artifacts")
+}

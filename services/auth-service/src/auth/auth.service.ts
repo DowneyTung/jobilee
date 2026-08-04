@@ -7,8 +7,8 @@ import type {
   User,
 } from "@jobilee/shared-types";
 import { hash, verify } from "@node-rs/argon2";
-import { Prisma, type User as UserRow } from "@prisma/client";
-import { AppError } from "../common/errors.ts";
+import { Prisma, type User as UserRow } from "../../generated/prisma/index.js";
+import { AppError } from "@jobilee/service-kit";
 import { PrismaService } from "../prisma/prisma.service.ts";
 import { TokensService } from "./tokens.service.ts";
 

@@ -11,6 +11,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared-types/package.json packages/shared-types/
 COPY packages/logger/package.json packages/logger/
 COPY packages/http-client/package.json packages/http-client/
+COPY packages/service-kit/package.json packages/service-kit/
 COPY services/gateway/package.json services/gateway/
 RUN pnpm install --frozen-lockfile --filter @jobilee/gateway...
 
@@ -18,7 +19,7 @@ FROM deps AS build
 COPY tsconfig.base.json ./
 COPY packages packages
 COPY services/gateway services/gateway
-RUN pnpm --filter @jobilee/shared-types --filter @jobilee/logger run build \
+RUN pnpm --filter @jobilee/shared-types --filter @jobilee/logger --filter @jobilee/service-kit run build \
   && pnpm --filter @jobilee/gateway run build
 
 FROM build AS dev

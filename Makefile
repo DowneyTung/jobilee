@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 COMPOSE := docker compose
 
-.PHONY: help env up up-d down reset migrate logs ps psql redis-cli health install build typecheck test clean
+.PHONY: help env up up-d down reset migrate rebuild logs ps psql redis-cli health install build typecheck test clean
 
 help: ## show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -25,6 +25,12 @@ reset: ## nuke volumes (fresh DB / object store)
 
 migrate: ## apply prisma migrations for every service
 	$(COMPOSE) exec -w /app/services/auth-service auth-service npx prisma migrate deploy
+	$(COMPOSE) exec -w /app/services/jobs-service jobs-service npx prisma migrate deploy
+
+rebuild: ## rebuild images and drop the node_modules volumes (after adding a dependency)
+	$(COMPOSE) down
+	@docker volume ls -q --filter name=$$(basename $$PWD) | grep node_modules | xargs -r docker volume rm
+	$(COMPOSE) up --build -d
 
 logs: ## tail logs (make logs s=postgres for one service)
 	$(COMPOSE) logs -f $(s)

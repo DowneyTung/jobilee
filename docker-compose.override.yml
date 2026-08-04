@@ -30,6 +30,18 @@ services:
       NODE_ENV: development
       LOG_LEVEL: ${LOG_LEVEL:-debug}
 
+  jobs-service:
+    build:
+      target: dev
+    volumes:
+      - ./services/jobs-service/src:/app/services/jobs-service/src:ro
+      - ./services/jobs-service/prisma:/app/services/jobs-service/prisma:ro
+      - ./packages:/app/packages:ro
+      - jobs_node_modules:/app/services/jobs-service/node_modules
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+
   gateway:
     build:
       target: dev
@@ -54,5 +66,6 @@ services:
 
 volumes:
   auth_node_modules:
+  jobs_node_modules:
   gateway_node_modules:
   web_node_modules:

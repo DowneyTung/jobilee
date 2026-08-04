@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { createLogger } from "@jobilee/logger";
 import { AppModule } from "./app.module.ts";
-import { NestJsonLogger } from "./common/nest-logger.ts";
+import { NestJsonLogger, logFatal } from "@jobilee/service-kit";
 import { loadConfig } from "./config.ts";
 import {
   createAuthMiddleware,
@@ -50,15 +50,4 @@ async function bootstrap(): Promise<void> {
   });
 }
 
-bootstrap().catch((error: unknown) => {
-  process.stdout.write(
-    JSON.stringify({
-      time: new Date().toISOString(),
-      level: "error",
-      service: "gateway",
-      msg: "failed to start",
-      err: error instanceof Error ? { message: error.message, stack: error.stack } : error,
-    }) + "\n",
-  );
-  process.exit(1);
-});
+bootstrap().catch((error: unknown) => logFatal("gateway", error));

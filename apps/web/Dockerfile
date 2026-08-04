@@ -11,6 +11,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/shared-types/package.json packages/shared-types/
 COPY packages/logger/package.json packages/logger/
 COPY packages/http-client/package.json packages/http-client/
+COPY packages/service-kit/package.json packages/service-kit/
 COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile --filter @jobilee/web...
 

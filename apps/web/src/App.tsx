@@ -3,7 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProvider.tsx";
 import { ProtectedRoute } from "./auth/ProtectedRoute.tsx";
 import { AuthForm } from "./routes/AuthForm.tsx";
-import { Dashboard } from "./routes/Dashboard.tsx";
+import { Board } from "./routes/Board.tsx";
+import { JobDetail } from "./routes/JobDetail.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,7 +27,8 @@ export function App() {
             <Route path="/login" element={<AuthForm mode="login" />} />
             <Route path="/register" element={<AuthForm mode="register" />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Board />} />
+              <Route path="/jobs/:id" element={<JobDetail />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

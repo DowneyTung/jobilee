@@ -1,9 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 import { createLogger, type Logger } from "@jobilee/logger";
-import { CONFIG, loadConfig, type Config } from "./config.ts";
-
-/** Injection token for the service-wide structured logger. */
-export const LOGGER = Symbol("LOGGER");
+import { CONFIG, LOGGER } from "@jobilee/service-kit";
+import { loadConfig, type Config } from "./config.ts";
 
 /**
  * Global so every module can inject CONFIG/LOGGER without re-importing —

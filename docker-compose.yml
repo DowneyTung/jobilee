@@ -103,6 +103,29 @@ services:
       retries: 6
       start_period: 20s
 
+  jobs-service:
+    build:
+      context: .
+      dockerfile: services/jobs-service/Dockerfile
+      target: runner
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3002/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
   gateway:
     build:
       context: .
@@ -111,14 +134,15 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # Only auth is routed in Phase 1; the rest are added with their services.
-      JOBS_SERVICE_URL: ""
+      # Wired as their services land; an empty value leaves the route unregistered.
       RESUME_SERVICE_URL: ""
       AI_SERVICE_URL: ""
     ports:
       - "127.0.0.1:${GATEWAY_PORT:-8080}:8080"
     depends_on:
       auth-service:
+        condition: service_healthy
+      jobs-service:
         condition: service_healthy
     healthcheck:
       test:

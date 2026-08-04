@@ -3,6 +3,10 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Each service generates its own client. With the default output they would
+  // all write to the one hoisted node_modules/@prisma/client and clobber each
+  // other — the last `prisma generate` in the workspace would win.
+  output   = "../generated/prisma"
 }
 
 datasource db {

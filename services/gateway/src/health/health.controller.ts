@@ -1,6 +1,7 @@
 import { Controller, Get, Inject } from "@nestjs/common";
 import type { Health } from "@jobilee/shared-types";
-import { CONFIG, type Config } from "../config.ts";
+import { CONFIG } from "@jobilee/service-kit";
+import type { Config } from "../config.ts";
 import { buildRoutes } from "../routes.ts";
 
 const SERVICE = "gateway";

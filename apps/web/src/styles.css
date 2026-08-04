@@ -278,3 +278,178 @@ a {
     animation-duration: 2s;
   }
 }
+
+/* ---- board: job cards ------------------------------------------------ */
+
+.stage-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stage-muted {
+  opacity: 0.72;
+}
+
+.job-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.job-card:hover {
+  border-color: var(--accent);
+}
+
+.job-title {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.tiny {
+  font-size: 0.78rem;
+}
+
+/* ---- forms ----------------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+textarea,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.add-job {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.add-job h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+button.compact {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+button.danger {
+  background: var(--danger);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+/* ---- job detail ------------------------------------------------------ */
+
+.app-main.detail {
+  max-width: 820px;
+}
+
+.back-link {
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.detail-head h1 {
+  margin: 0 0 2px;
+  font-size: 1.3rem;
+}
+
+.detail-head p {
+  margin: 0 0 6px;
+}
+
+.detail-head .field {
+  flex: 0 0 200px;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.timeline .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.timeline-stage {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.danger-zone p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .hide-narrow {
+    display: none;
+  }
+}

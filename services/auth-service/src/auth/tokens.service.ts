@@ -1,8 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { jwtClaimsSchema, type JwtClaims } from "@jobilee/shared-types";
 import { SignJWT, jwtVerify } from "jose";
-import { CONFIG, type Config } from "../config.ts";
-import { AppError } from "../common/errors.ts";
+import { AppError, CONFIG } from "@jobilee/service-kit";
+import type { Config } from "../config.ts";
 
 const ISSUER = "jobilee-auth";
 const AUDIENCE = "jobilee";

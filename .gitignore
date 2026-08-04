@@ -30,7 +30,7 @@ out/
 apps/web/dev-dist/
 
 # ---- prisma (generated client; migrations ARE tracked) ----------------------
-**/prisma/generated/
+**/generated/
 **/node_modules/.prisma/
 
 # ---- tests / coverage -------------------------------------------------------

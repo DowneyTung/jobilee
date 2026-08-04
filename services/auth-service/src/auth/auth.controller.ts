@@ -10,8 +10,7 @@ import {
   type RegisterRequest,
   type User,
 } from "@jobilee/shared-types";
-import { UserId } from "../common/user-id.decorator.ts";
-import { ZodValidationPipe } from "../common/zod.pipe.ts";
+import { UserId, ZodValidationPipe } from "@jobilee/service-kit";
 import { AuthService } from "./auth.service.ts";
 
 @Controller("auth")

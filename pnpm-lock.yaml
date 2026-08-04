@@ -32,6 +32,9 @@ importers:
       react-router-dom:
         specifier: ^6.28.1
         version: 6.30.4(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       '@types/react':
         specifier: ^18.3.18
@@ -77,6 +80,37 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  packages/service-kit:
+    dependencies:
+      '@jobilee/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@jobilee/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+    devDependencies:
+      '@nestjs/common':
+        specifier: ^11.0.7
+        version: 11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.20.1
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.1
+        version: 7.8.2
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+
   packages/shared-types:
     dependencies:
       zod:
@@ -95,6 +129,9 @@ importers:
       '@jobilee/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@jobilee/service-kit':
+        specifier: workspace:*
+        version: link:../../packages/service-kit
       '@jobilee/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -147,6 +184,9 @@ importers:
       '@jobilee/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@jobilee/service-kit':
+        specifier: workspace:*
+        version: link:../../packages/service-kit
       '@jobilee/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -184,6 +224,55 @@ importers:
       concurrently:
         specifier: ^9.1.2
         version: 9.2.4
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  services/jobs-service:
+    dependencies:
+      '@jobilee/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@jobilee/service-kit':
+        specifier: workspace:*
+        version: link:../../packages/service-kit
+      '@jobilee/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@nestjs/common':
+        specifier: ^11.0.7
+        version: 11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^11.0.7
+        version: 11.1.28(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-express':
+        specifier: ^11.0.7
+        version: 11.1.28(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)
+      '@prisma/client':
+        specifier: ^6.3.0
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.1
+        version: 7.8.2
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.20.1
+      concurrently:
+        specifier: ^9.1.2
+        version: 9.2.4
+      prisma:
+        specifier: ^6.3.0
+        version: 6.19.3(typescript@5.9.3)
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

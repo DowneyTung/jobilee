@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@jobilee/logger": "workspace:*",
+    "@jobilee/service-kit": "workspace:*",
     "@jobilee/shared-types": "workspace:*",
     "@nestjs/common": "^11.0.7",
     "@nestjs/core": "^11.0.7",
