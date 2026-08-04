@@ -23,6 +23,7 @@ export class ApiError extends Error {
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /** JSON-encoded, unless it's FormData — then it's sent as multipart. */
   body?: unknown;
   /** Internal: prevents a refresh loop when the refresh call itself 401s. */
   skipRefresh?: boolean;
@@ -70,16 +71,22 @@ async function refreshAccessToken(): Promise<boolean> {
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, skipRefresh = false } = options;
 
+  const isMultipart = body instanceof FormData;
+
   const send = async (): Promise<Response> => {
     const headers: Record<string, string> = { accept: "application/json" };
     const token = getAccessToken();
     if (token) headers["authorization"] = `Bearer ${token}`;
-    if (body !== undefined) headers["content-type"] = "application/json";
+    // For multipart the browser must set content-type itself — it has to append
+    // the boundary, and an explicit header would omit it.
+    if (body !== undefined && !isMultipart) headers["content-type"] = "application/json";
 
     return fetch(`${API_BASE}${path}`, {
       method,
       headers,
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      ...(body === undefined
+        ? {}
+        : { body: isMultipart ? (body as FormData) : JSON.stringify(body) }),
     });
   };
 

@@ -42,6 +42,18 @@ services:
       NODE_ENV: development
       LOG_LEVEL: ${LOG_LEVEL:-debug}
 
+  resume-service:
+    build:
+      target: dev
+    volumes:
+      - ./services/resume-service/src:/app/services/resume-service/src:ro
+      - ./services/resume-service/prisma:/app/services/resume-service/prisma:ro
+      - ./packages:/app/packages:ro
+      - resume_node_modules:/app/services/resume-service/node_modules
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+
   gateway:
     build:
       target: dev
@@ -66,6 +78,7 @@ services:
 
 volumes:
   auth_node_modules:
+  resume_node_modules:
   jobs_node_modules:
   gateway_node_modules:
   web_node_modules:

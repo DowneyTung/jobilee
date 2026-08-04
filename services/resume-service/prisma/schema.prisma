@@ -1,0 +1,57 @@
+// resume-service owns resume content and the object-storage bookkeeping.
+// It knows users and jobs only by uuid — no FKs across service boundaries.
+
+generator client {
+  provider = "prisma-client-js"
+  // Per-service output; the default would clobber the other services' clients.
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("RESUME_DATABASE_URL")
+}
+
+/// One editable base resume per user; everything else is derived from it.
+model BaseResume {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  content   String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@map("base_resumes")
+}
+
+/// Immutable. Tailoring a resume again appends a new version rather than
+/// overwriting, so you can always see what you actually sent.
+model TailoredResume {
+  id          String   @id @default(uuid())
+  userId      String
+  jobId       String
+  version     Int
+  gapAnalysis String   @default("")
+  content     String
+  createdAt   DateTime @default(now())
+
+  // Makes the version sequence a database invariant: two concurrent writers
+  // cannot both claim version N. The loser retries against the new max.
+  @@unique([userId, jobId, version])
+  @@index([userId, jobId])
+  @@map("tailored_resumes")
+}
+
+/// Metadata for a file in MinIO/S3. The bytes live in object storage; this
+/// row is the only thing that maps a user to an object key.
+model ResumeFile {
+  id          String   @id @default(uuid())
+  userId      String
+  jobId       String?
+  filename    String
+  contentType String
+  size        Int
+  objectKey   String   @unique
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("resume_files")
+}

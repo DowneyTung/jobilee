@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute.tsx";
 import { AuthForm } from "./routes/AuthForm.tsx";
 import { Board } from "./routes/Board.tsx";
 import { JobDetail } from "./routes/JobDetail.tsx";
+import { Settings } from "./routes/Settings.tsx";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ export function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Board />} />
               <Route path="/jobs/:id" element={<JobDetail />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

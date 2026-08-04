@@ -26,6 +26,7 @@ reset: ## nuke volumes (fresh DB / object store)
 migrate: ## apply prisma migrations for every service
 	$(COMPOSE) exec -w /app/services/auth-service auth-service npx prisma migrate deploy
 	$(COMPOSE) exec -w /app/services/jobs-service jobs-service npx prisma migrate deploy
+	$(COMPOSE) exec -w /app/services/resume-service resume-service npx prisma migrate deploy
 
 rebuild: ## rebuild images and drop the node_modules volumes (after adding a dependency)
 	$(COMPOSE) down

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    // NestJS DI reads constructor parameter types from decorator metadata, so
+    // these three must stay on. `useDefineForClassFields: false` keeps legacy
+    // decorators working against an ES2022 target.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false
+  },
+  "include": ["src/**/*"]
+}

@@ -4,6 +4,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../api/client.ts";
 import { useChangeStage, useDeleteJob, useJob, useUpdateJob } from "../api/jobs.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
+import { FileList } from "../components/FileList.tsx";
+import { TailoredResumes } from "../components/TailoredResumes.tsx";
 
 const timestamp = new Intl.DateTimeFormat(undefined, {
   dateStyle: "medium",
@@ -139,6 +141,19 @@ export function JobDetail() {
             {updateJob.isPending ? "Saving…" : dirty ? "Save changes" : "Saved"}
           </button>
         </div>
+      </section>
+
+      <section className="card">
+        <h2>Tailored resumes</h2>
+        <TailoredResumes jobId={job.id} />
+      </section>
+
+      <section className="card">
+        <h2>Files</h2>
+        <p className="muted tiny">
+          The exact PDF or DOCX you sent for this application.
+        </p>
+        <FileList jobId={job.id} />
       </section>
 
       <section className="card danger-zone">

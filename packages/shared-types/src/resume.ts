@@ -38,6 +38,8 @@ export const resumeFileSchema = z.object({
   jobId: z.string().uuid().nullable(),
   filename: z.string(),
   contentType: z.string(),
+  size: z.number().int().nonnegative(),
+  /** Storage location. Internal — the client downloads via a signed URL. */
   objectKey: z.string(),
   createdAt: z.coerce.date(),
 });

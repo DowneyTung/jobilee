@@ -12,6 +12,9 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
       </Link>
       <div className="header-right">
         {children}
+        <Link to="/settings" className="header-link">
+          Resume
+        </Link>
         <span className="muted hide-narrow">{user?.email}</span>
         <button type="button" className="ghost" onClick={logout}>
           Sign out
