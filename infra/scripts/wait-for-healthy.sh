@@ -4,7 +4,7 @@
 set -euo pipefail
 
 TIMEOUT="${TIMEOUT:-120}"
-SERVICES=(postgres redis minio auth-service jobs-service resume-service gateway)
+SERVICES=(postgres redis minio auth-service jobs-service resume-service ai-service gateway)
 deadline=$(( $(date +%s) + TIMEOUT ))
 
 state_of() {

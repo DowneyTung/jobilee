@@ -1,0 +1,51 @@
+// ai-service tracks generation work only. It does not own domain content:
+// research and interview prep belong to jobs-service, tailored resumes to
+// resume-service. That keeps domain data with its owner and lets this service
+// be replaced without a data migration.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("AI_DATABASE_URL")
+}
+
+enum TaskType {
+  RESEARCH
+  INTERVIEW_PREP
+  RESUME_TAILOR
+}
+
+enum TaskStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model GenerationTask {
+  id     String     @id @default(uuid())
+  userId String
+  type   TaskType
+  status TaskStatus @default(QUEUED)
+
+  /// { jobId, jd, baseResume?, ... } — the worker's input payload.
+  input Json
+  /// Populated on SUCCEEDED.
+  result String?
+  /// User-facing failure message on FAILED. Never the raw provider error.
+  error String?
+
+  /// Token accounting, for cost visibility.
+  inputTokens  Int?
+  outputTokens Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("generation_tasks")
+}

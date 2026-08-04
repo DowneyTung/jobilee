@@ -54,6 +54,18 @@ services:
       NODE_ENV: development
       LOG_LEVEL: ${LOG_LEVEL:-debug}
 
+  ai-service:
+    build:
+      target: dev
+    volumes:
+      - ./services/ai-service/src:/app/services/ai-service/src:ro
+      - ./services/ai-service/prisma:/app/services/ai-service/prisma:ro
+      - ./packages:/app/packages:ro
+      - ai_node_modules:/app/services/ai-service/node_modules
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+
   gateway:
     build:
       target: dev
@@ -78,6 +90,7 @@ services:
 
 volumes:
   auth_node_modules:
+  ai_node_modules:
   resume_node_modules:
   jobs_node_modules:
   gateway_node_modules:

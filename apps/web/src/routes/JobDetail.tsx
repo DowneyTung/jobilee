@@ -4,7 +4,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../api/client.ts";
 import { useChangeStage, useDeleteJob, useJob, useUpdateJob } from "../api/jobs.ts";
 import { AppHeader } from "../components/AppHeader.tsx";
+import { Artifacts } from "../components/Artifacts.tsx";
 import { FileList } from "../components/FileList.tsx";
+import { GenerationPanel } from "../components/GenerationPanel.tsx";
 import { TailoredResumes } from "../components/TailoredResumes.tsx";
 
 const timestamp = new Intl.DateTimeFormat(undefined, {
@@ -141,6 +143,13 @@ export function JobDetail() {
             {updateJob.isPending ? "Saving…" : dirty ? "Save changes" : "Saved"}
           </button>
         </div>
+      </section>
+
+      <GenerationPanel job={job} />
+
+      <section className="card">
+        <h2>Research &amp; prep</h2>
+        <Artifacts artifacts={job.artifacts} />
       </section>
 
       <section className="card">

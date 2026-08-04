@@ -591,3 +591,16 @@ button.danger {
   margin-right: auto;
   align-self: center;
 }
+
+/* ---- AI generation --------------------------------------------------- */
+
+.generation-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.generation-buttons button {
+  margin-top: 0;
+}
