@@ -45,9 +45,11 @@ services:
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    # Bound to loopback: these credentials are dev throwaways, and publishing on
+    # 0.0.0.0 would expose the object store to everyone on your network.
     ports:
-      - "${MINIO_PORT:-9000}:9000"
-      - "${MINIO_CONSOLE_PORT:-9001}:9001" # web console
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001" # web console
     volumes:
       - miniodata:/data
     healthcheck:

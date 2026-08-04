@@ -70,6 +70,27 @@ infra/
 - **`ANTHROPIC_API_KEY` lives only in `ai-service`.** Never in the gateway or web.
 - **Secrets stay in `.env`**, which is gitignored. `.env.example` is the template.
 
+## Security
+
+This repo is public. The rules that keep it safe to be public:
+
+- **No secrets in git, ever.** `.env` is gitignored; `.env.example` is a template
+  holding placeholders and throwaway local defaults, never real values. If you
+  ever commit a live key, treat it as burned — rotate it, don't just delete the
+  line, because git history and GitHub's index keep it.
+- **The credentials in `.env.example` are dev-only.** `jobilee/jobilee` and
+  `minioadmin/minioadmin` exist so `make up` works with zero setup. Anything
+  deployed off this repo needs real secrets from a secret manager, starting with
+  a generated `JWT_SECRET` (`openssl rand -base64 48`).
+- **Infra ports bind to `127.0.0.1`.** Postgres, Redis, and MinIO are reachable
+  from your machine only, not from your network.
+- **Your data never enters the repo.** Postgres/Redis/MinIO write to Docker named
+  volumes (`pgdata`, `redisdata`, `miniodata`), which live in Docker's storage
+  outside this directory. Nothing in the repo is a writable bind mount. Seed data
+  must be fictional — no real applications, resumes, or employer names.
+- **`ANTHROPIC_API_KEY` is confined to `ai-service`** and is never sent to the
+  browser or the gateway.
+
 ## Notes
 
 - Compose reads `docker-compose.override.yml` automatically, which publishes
