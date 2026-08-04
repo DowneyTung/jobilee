@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Lets you re-run the suite by hand without pushing.
+  workflow_dispatch:
+
+# A newer push supersedes an in-flight run for the same branch — except on
+# main, where every commit's result is worth keeping.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  # Match the version the service images run, not whatever the runner ships.
+  NODE_VERSION: "22"
+
+jobs:
+  # Fast feedback: everything that needs no services. Fails a broken PR in
+  # about a minute instead of after a full stack boot.
+  check:
+    name: Build, typecheck, unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Turborepo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - name: Build
+        run: pnpm turbo run build
+
+      - name: Typecheck
+        run: pnpm turbo run typecheck
+
+      - name: Unit tests
+        run: pnpm turbo run test --filter='./packages/*' --filter='./services/*'
+
+      - name: Verify .env.example covers every variable the stack reads
+        run: ./infra/scripts/check-env-example.sh
+
+  # The real thing: the shipped images, a live stack, and a browser.
+  integration:
+    name: Integration + E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @jobilee/e2e-tests exec playwright install --with-deps chromium
+
+      - name: Install Chromium system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @jobilee/e2e-tests exec playwright install-deps chromium
+
+      - name: Start the stack (with a mocked Anthropic API)
+        run: make test-stack
+
+      - name: Integration tests
+        run: make test-integration
+
+      - name: E2E tests
+        run: make test-e2e
+
+      # The logs are the only way to diagnose a failure that reproduces on CI
+      # but not locally.
+      - name: Service logs
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.test.yml logs --tail 200
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/test-results/
+          retention-days: 7
+
+      - name: Stop the stack
+        if: always()
+        run: make test-stack-down
+
+  # Proves the documented first-run works, which is the thing most likely to
+  # rot: it exercises the real compose file, not the test overlay.
+  clean-boot:
+    name: Clean checkout boots
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: make up
+        run: make up-d
+
+      - name: make health
+        run: make health
+
+      - name: make migrate
+        run: make migrate
+
+      - name: Smoke test through the gateway
+        run: ./infra/scripts/smoke-test.sh
+
+      - name: Service logs
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - name: Tear down
+        if: always()
+        run: make down

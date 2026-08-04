@@ -1,0 +1,34 @@
+# Dependency updates. On a public repo this is the cheapest real security
+# control available: most vulnerabilities arrive through transitive deps, and
+# nobody audits a lockfile by hand.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Routine bumps arrive as a few reviewable PRs rather than dozens.
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+    # Majors land on their own so a breaking change is never buried in a group.
+    labels: [dependencies]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [dependencies, ci]
