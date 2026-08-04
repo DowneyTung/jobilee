@@ -78,6 +78,73 @@ services:
         mc mb --ignore-existing "local/$$S3_BUCKET"
         echo "minio-init: bucket '$$S3_BUCKET' ready"
 
+  # ---- application services -------------------------------------------------
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+      target: runner
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+      target: runner
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Only auth is routed in Phase 1; the rest are added with their services.
+      JOBS_SERVICE_URL: ""
+      RESUME_SERVICE_URL: ""
+      AI_SERVICE_URL: ""
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT:-8080}:8080"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: runner
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8080/api}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-5173}:5173"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
 volumes:
   pgdata:
   redisdata:

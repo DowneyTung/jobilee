@@ -4,7 +4,7 @@
 set -euo pipefail
 
 TIMEOUT="${TIMEOUT:-120}"
-SERVICES=(postgres redis minio)
+SERVICES=(postgres redis minio auth-service gateway)
 deadline=$(( $(date +%s) + TIMEOUT ))
 
 state_of() {
@@ -38,6 +38,8 @@ done
 printf '\r%-72s\r' ''
 for svc in "${SERVICES[@]}"; do echo "✓ $svc healthy"; done
 echo
+echo "  web       http://localhost:${WEB_PORT:-5173}"
+echo "  gateway   http://localhost:${GATEWAY_PORT:-8080}  (/health, /ready)"
 echo "  postgres  localhost:${POSTGRES_PORT:-5432}  (databases: auth jobs resume ai)"
 echo "  redis     localhost:${REDIS_PORT:-6379}"
 echo "  minio     localhost:${MINIO_PORT:-9000}  console http://localhost:${MINIO_CONSOLE_PORT:-9001}"

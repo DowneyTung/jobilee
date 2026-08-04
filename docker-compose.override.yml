@@ -1,12 +1,13 @@
 # Dev-only overrides. Applied automatically by `docker compose up`.
-# Phase 0: publish infra ports to the host so you can reach them from local
-# tooling (psql, redis-cli, prisma migrate run outside a container).
-# Later phases add source mounts + watch-mode commands for the services here.
-
 #
 # Ports are bound to 127.0.0.1 on purpose. A bare "5432:5432" listens on every
 # interface, which would put a postgres with dev-default credentials on whatever
 # network you happen to be on. Keep the loopback prefix.
+#
+# Services build their `dev` stage and mount their source, so edits on the host
+# recompile inside the container. `node_modules` is masked with an anonymous
+# volume so the container keeps the Linux binaries it installed at build time
+# rather than seeing the host's macOS ones.
 
 services:
   postgres:
@@ -16,3 +17,42 @@ services:
   redis:
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+
+  auth-service:
+    build:
+      target: dev
+    volumes:
+      - ./services/auth-service/src:/app/services/auth-service/src:ro
+      - ./services/auth-service/prisma:/app/services/auth-service/prisma:ro
+      - ./packages:/app/packages:ro
+      - auth_node_modules:/app/services/auth-service/node_modules
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+
+  gateway:
+    build:
+      target: dev
+    volumes:
+      - ./services/gateway/src:/app/services/gateway/src:ro
+      - ./packages:/app/packages:ro
+      - gateway_node_modules:/app/services/gateway/node_modules
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+
+  web:
+    build:
+      target: dev
+    volumes:
+      - ./apps/web/src:/app/apps/web/src:ro
+      - ./apps/web/index.html:/app/apps/web/index.html:ro
+      - web_node_modules:/app/apps/web/node_modules
+    environment:
+      # Read by the Vite dev server at start-up.
+      VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8080/api}
+
+volumes:
+  auth_node_modules:
+  gateway_node_modules:
+  web_node_modules:
