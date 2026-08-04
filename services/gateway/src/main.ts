@@ -9,7 +9,9 @@ import {
   requestIdMiddleware,
   stripInboundUserId,
 } from "./middleware/identity.ts";
+import { createAccessLog } from "./middleware/observability.ts";
 import { createRouteProxy } from "./middleware/proxy.ts";
+import { createRateLimiter, createRedisClient } from "./middleware/rate-limit.ts";
 import { buildRoutes } from "./routes.ts";
 
 async function bootstrap(): Promise<void> {
@@ -30,11 +32,18 @@ async function bootstrap(): Promise<void> {
   });
 
   // Order matters. Correlation id first so every later log carries it; the
-  // header strip second so no path can smuggle an identity in; authentication
-  // third; proxies last.
+  // header strip next so no path can smuggle an identity in; then
+  // authentication, then rate limiting, and the proxies last.
   app.use(requestIdMiddleware);
+  // Logging wraps everything below it, so rejected requests are logged too.
+  app.use(createAccessLog(log));
   app.use(stripInboundUserId);
   app.use(createAuthMiddleware(config, log));
+  // After authentication, so authenticated traffic is charged to the user
+  // rather than to a shared IP — but still before the proxies, so a rejected
+  // request never reaches a downstream service.
+  const redis = createRedisClient(config);
+  app.use(createRateLimiter({ config, log, redis }));
 
   const routes = buildRoutes(config);
   for (const route of routes) {

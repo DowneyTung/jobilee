@@ -29,6 +29,31 @@ test.describe("AI generation from the job page", () => {
     await expect(page.getByRole("button", { name: /Company research/ })).toBeVisible();
   });
 
+  test("results arrive over SSE, not the polling fallback", async ({ page }) => {
+    await register(page, uniqueUser("e2e-sse"));
+    await addJob(page, { company: "Streamy", title: "Engineer", jd: JD });
+    await openJob(page, "Streamy");
+
+    // If this regresses to polling the app still works, so only the network
+    // shape reveals it.
+    const streamRequest = page.waitForRequest((request) =>
+      /\/api\/ai\/tasks\/[0-9a-f-]+\/stream$/.test(request.url()),
+    );
+
+    await page.getByRole("button", { name: "Research company" }).click();
+    const request = await streamRequest;
+
+    expect(request.headers()["accept"]).toContain("text/event-stream");
+    // The token rides in a header; putting it in the query string would leak it
+    // into history, proxy logs, and Referer headers.
+    expect(request.headers()["authorization"]).toMatch(/^Bearer /);
+    expect(request.url()).not.toMatch(/token|jwt|authorization/i);
+
+    await expect(page.getByRole("button", { name: /Company research/ })).toBeVisible({
+      timeout: 45_000,
+    });
+  });
+
   test("tailoring writes a versioned resume", async ({ page }) => {
     const user = uniqueUser("e2e-tailor");
     await register(page, user);

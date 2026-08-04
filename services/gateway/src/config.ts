@@ -13,6 +13,14 @@ const envSchema = baseEnvSchema.extend({
   AI_SERVICE_URL: optionalUrl,
   /** Browser origin allowed by CORS. */
   WEB_ORIGIN: z.string().url().default("http://localhost:5173"),
+
+  /** Backs the rate limiter, so limits survive a restart and extra replicas. */
+  REDIS_URL: z.string().url(),
+  RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
+  /** Per authenticated user, per window. */
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+  /** Per IP, per window, on login/register/refresh — the brute-force surface. */
+  RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(20),
 });
 
 export type Config = z.infer<typeof envSchema>;

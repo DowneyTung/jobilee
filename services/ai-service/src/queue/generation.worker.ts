@@ -12,6 +12,7 @@ import type { Config } from "../config.ts";
 import { GenerationService, describeFailure } from "../generation/generation.service.ts";
 import { PrismaService } from "../prisma/prisma.service.ts";
 import { QuotaService } from "../quota/quota.service.ts";
+import { TaskEventsService } from "../tasks/task-events.service.ts";
 import { GENERATION_QUEUE, type GenerationJob } from "./queue.service.ts";
 
 /**
@@ -30,6 +31,7 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly generation: GenerationService,
     private readonly quota: QuotaService,
+    private readonly events: TaskEventsService,
   ) {}
 
   onModuleInit(): void {
@@ -74,6 +76,7 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
       where: { id: taskId },
       data: { status: "RUNNING", error: null },
     });
+    await this.events.publish({ taskId, status: "RUNNING" });
 
     try {
       const result = await this.generation.generate(request);
@@ -88,6 +91,8 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
           error: null,
         },
       });
+
+      await this.events.publish({ taskId, status: "SUCCEEDED", result: result.text });
 
       this.log.info("generation succeeded", {
         taskId,
@@ -115,6 +120,7 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
         where: { id: taskId },
         data: { status: "FAILED", error: message },
       });
+      await this.events.publish({ taskId, status: "FAILED", error: message });
       // The user was charged a quota unit for work that produced nothing.
       await this.quota.refund(userId).catch(() => undefined);
 

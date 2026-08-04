@@ -215,6 +215,10 @@ services:
       GATEWAY_PORT: 8080
       JWT_SECRET: ${JWT_SECRET}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:5173}
+      REDIS_URL: ${REDIS_URL}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-300}
+      RATE_LIMIT_AUTH_MAX: ${RATE_LIMIT_AUTH_MAX:-20}
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
       JOBS_SERVICE_URL: ${JOBS_SERVICE_URL}
       RESUME_SERVICE_URL: ${RESUME_SERVICE_URL}
@@ -222,6 +226,8 @@ services:
     ports:
       - "127.0.0.1:${GATEWAY_PORT:-8080}:8080"
     depends_on:
+      redis:
+        condition: service_healthy
       auth-service:
         condition: service_healthy
       jobs-service:

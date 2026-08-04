@@ -69,14 +69,29 @@ export async function api<T = unknown>(
   return payload as T;
 }
 
-/** Registers a throwaway user and returns a usable session. */
+/**
+ * Registers a throwaway user and returns a usable session.
+ *
+ * Registration shares the gateway's per-IP auth bucket with every other test,
+ * so this backs off and retries on 429 the way a real client should, instead
+ * of failing because a neighbouring test provoked the limiter.
+ */
 export async function newUser(prefix = "it"): Promise<Session> {
   const email = `${prefix}+${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`;
-  const registered = await api<{ accessToken: string; user: { id: string } }>("/api/auth/register", {
-    method: "POST",
-    body: { email, password: "integration-test-password" },
-  });
-  return { token: registered.accessToken, userId: registered.user.id, email };
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      const registered = await api<{ accessToken: string; user: { id: string } }>(
+        "/api/auth/register",
+        { method: "POST", body: { email, password: "integration-test-password" } },
+      );
+      return { token: registered.accessToken, userId: registered.user.id, email };
+    } catch (error) {
+      if (!(error instanceof HttpFailure) || error.status !== 429) throw error;
+      await sleep(1_500);
+    }
+  }
+  throw new Error("could not register a test user — the rate limiter never released");
 }
 
 // ---- mock Anthropic control ---------------------------------------------

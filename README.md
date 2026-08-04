@@ -16,7 +16,7 @@ Design and phased plan: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 | 3 | resume-service + object storage | ✅ done |
 | 4 | ai-service (queue, workers, Anthropic) | ✅ done |
 | — | Test suite: unit, integration, browser E2E, mocked Anthropic API | ✅ done |
-| 5 | Hardening (SSE, gateway rate limiting, observability) | ⏳ next |
+| 5 | Hardening (SSE, gateway rate limiting, observability) | ✅ done |
 
 ## Quick start
 
@@ -87,9 +87,9 @@ Three layers, each with a different job.
 
 | Layer | Command | Needs | What it covers |
 |---|---|---|---|
-| **Unit** (70) | `make test` | nothing | Pure logic: token issue/verify, gateway routing and header stripping, prompt construction, retry classification, env parsing, the shared packages. Runs in ~2s. |
-| **Integration** (36) | `make test-stack` then `make test-integration` | the test stack | Every service through the gateway with real Postgres, Redis, and MinIO — auth flows, tenant isolation, the pipeline, signed-URL downloads, and the whole AI task lifecycle. |
-| **E2E** (22) | `make test-stack` then `make test-e2e` | the test stack + Chromium | The browser: register, move a job through stages, generate, upload and download a file, and the failure states. |
+| **Unit** (76) | `make test` | nothing | Pure logic: token issue/verify, gateway routing and header stripping, prompt construction, retry classification, env parsing, the shared packages. Runs in ~2s. |
+| **Integration** (49) | `make test-stack` then `make test-integration` | the test stack | Every service through the gateway with real Postgres, Redis, and MinIO — auth flows, tenant isolation, the pipeline, signed-URL downloads, and the whole AI task lifecycle. |
+| **E2E** (23) | `make test-stack` then `make test-e2e` | the test stack + Chromium | The browser: register, move a job through stages, generate, upload and download a file, and the failure states. |
 
 `make test-all` runs all three, starting and stopping the stack around them.
 
@@ -117,6 +117,35 @@ no-invention rule reaches the model, and that an oversized job description is
 truncated before it costs tokens.
 
 No real key, no spend, no 40-second waits.
+
+## Hardening
+
+**Generation results arrive over SSE.** `GET /api/ai/tasks/:id/stream` pushes each
+transition as the worker makes it; the worker publishes to Redis so the stream keeps
+working when the worker moves to its own container. The client consumes it with
+`fetch`, not `EventSource` — `EventSource` cannot set request headers, and the
+alternative is putting the access token in a query string where it lands in browser
+history, proxy logs, and `Referer` headers. **Polling remains as an automatic
+fallback**, so a proxy that mangles SSE degrades rather than breaks. Task state lives
+in Postgres either way, so a dropped connection loses nothing.
+
+**The gateway rate-limits in Redis**, not in memory: the limit survives a restart
+(an in-process counter hands an attacker a clean slate on every deploy) and stays
+correct if a second replica is added. Two buckets — a small per-IP budget on
+login/register/refresh, because each attempt costs an argon2 hash downstream, and a
+larger per-user budget for everything else so one noisy client cannot spend
+another's allowance. Responses carry `RateLimit-*` and `Retry-After`. If Redis is
+unreachable the limiter **fails open** and logs loudly; availability of the whole API
+matters more than a perfect limit.
+
+**Observability** is one structured log line per request (method, route, status,
+duration, `userId`, `requestId`) plus `GET /metrics` in Prometheus text format. Route
+labels are collapsed to their shape — `/api/jobs/:id` — because an id in a metric
+label is the standard way to melt a metrics backend. The label is captured before
+the proxy rewrites the path, so one endpoint is one series.
+
+`/metrics` and `/health` sit outside `/api`, so they need no token. Put them behind
+your reverse proxy or a trusted network in a real deployment.
 
 ## Security
 

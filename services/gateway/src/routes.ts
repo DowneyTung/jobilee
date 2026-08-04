@@ -7,6 +7,8 @@ export interface RouteDef {
   target: string;
   /** `prefix` is rewritten to this before the request goes downstream. */
   rewriteTo: string;
+  /** Carries SSE or other long-lived responses; disables the request timeout. */
+  longLived?: boolean;
 }
 
 /**
@@ -40,7 +42,7 @@ export function buildRoutes(config: Config): RouteDef[] {
       ? { prefix: "/api/resume", target: config.RESUME_SERVICE_URL, rewriteTo: "/resume" }
       : undefined,
     config.AI_SERVICE_URL
-      ? { prefix: "/api/ai", target: config.AI_SERVICE_URL, rewriteTo: "/ai" }
+      ? { prefix: "/api/ai", target: config.AI_SERVICE_URL, rewriteTo: "/ai", longLived: true }
       : undefined,
   ];
   return table.filter((route): route is RouteDef => route !== undefined);

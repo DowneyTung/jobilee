@@ -25,6 +25,16 @@ services:
       retries: 10
       start_period: 5s
 
+  gateway:
+    environment:
+      # Low enough that the rate-limit tests trip it quickly, high enough that
+      # the rest of the suite's auth traffic gets through.
+      # A short window so a test that trips the limit doesn't starve the rest
+      # of the suite for a minute. The limiter still engages identically.
+      RATE_LIMIT_WINDOW_SECONDS: 5
+      RATE_LIMIT_AUTH_MAX: 25
+      RATE_LIMIT_MAX: 2000
+
   ai-service:
     environment:
       # The SDK talks to the mock; everything downstream of the HTTP call —

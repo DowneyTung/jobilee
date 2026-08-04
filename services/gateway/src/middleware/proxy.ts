@@ -16,9 +16,12 @@ export function createRouteProxy(route: RouteDef, log: Logger): RequestHandler {
     changeOrigin: true,
     pathFilter: `${route.prefix}/**`,
     pathRewrite: { [`^${route.prefix}`]: route.rewriteTo },
-    // AI generations take 20–40s; don't sever them mid-flight.
-    proxyTimeout: 120_000,
-    timeout: 120_000,
+    // AI generations take 20–40s and their SSE streams stay open far longer,
+    // so routes that carry them opt out of the request timeout entirely; the
+    // service closes its own streams and heartbeats to keep them alive.
+    ...(route.longLived
+      ? { proxyTimeout: 0, timeout: 0 }
+      : { proxyTimeout: 120_000, timeout: 120_000 }),
     on: {
       proxyReq: (proxyReq, req) => {
         const request = asGatewayRequest(req);

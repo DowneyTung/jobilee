@@ -1,7 +1,8 @@
-import { Controller, Get, Inject } from "@nestjs/common";
+import { Controller, Get, Header, Inject } from "@nestjs/common";
 import type { Health } from "@jobilee/shared-types";
 import { CONFIG } from "@jobilee/service-kit";
 import type { Config } from "../config.ts";
+import { metrics } from "../middleware/observability.ts";
 import { buildRoutes } from "../routes.ts";
 
 const SERVICE = "gateway";
@@ -43,5 +44,16 @@ export class HealthController {
       uptimeSeconds: Math.floor(process.uptime()),
       checks,
     };
+  }
+
+  /**
+   * Prometheus scrape target. Reachable without a token like /health, because
+   * it is on the gateway's own path rather than under /api — expose it only on
+   * a trusted network, or put it behind the reverse proxy in a real deployment.
+   */
+  @Get("metrics")
+  @Header("content-type", "text/plain; version=0.0.4; charset=utf-8")
+  metrics(): string {
+    return metrics.render();
   }
 }
