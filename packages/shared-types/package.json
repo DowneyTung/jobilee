@@ -11,13 +11,15 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test src/*.test.ts",
-    "clean": "rm -rf dist .turbo"
+    "test": "tsc -p tsconfig.test.json && node --test \"dist-test/**/*.test.js\"",
+    "clean": "rm -rf dist dist-test .turbo"
   },
   "dependencies": {
     "zod": "^3.24.1"

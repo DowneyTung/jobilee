@@ -1,0 +1,19 @@
+{
+  "name": "@jobilee/e2e-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "install-browsers": "playwright install chromium --with-deps",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf test-results playwright-report .turbo"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  }
+}

@@ -16,7 +16,8 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": []
+      "inputs": ["src/**", "tsconfig*.json", "package.json"],
+      "outputs": ["dist-test/**"]
     },
     "lint": {
       "outputs": []

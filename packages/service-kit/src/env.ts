@@ -34,6 +34,13 @@ export function parseEnv<T extends z.ZodTypeAny>(
   return parsed.data as z.infer<T>;
 }
 
+/**
+ * JSON body ceiling. Must exceed the largest payload our schemas allow — a
+ * tailoring request carries a 200K-char resume plus a 100K-char job
+ * description — or legitimate requests fail at the parser.
+ */
+export const JSON_BODY_LIMIT = "2mb";
+
 /** Injection token for the parsed config object. */
 export const CONFIG = Symbol("CONFIG");
 /** Injection token for the service-wide structured logger. */

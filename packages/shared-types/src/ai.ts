@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+/**
+ * Input ceilings, mirroring the limits jobs-service and resume-service already
+ * enforce on the same content. Without them an oversized paste is rejected by
+ * the HTTP body parser as an opaque error instead of a clear validation
+ * message.
+ */
+export const MAX_JD_CHARS = 100_000;
+export const MAX_RESUME_CHARS = 200_000;
+
 export const TASK_TYPES = ["RESEARCH", "INTERVIEW_PREP", "RESUME_TAILOR"] as const;
 export const taskTypeSchema = z.enum(TASK_TYPES);
 export type TaskType = z.infer<typeof taskTypeSchema>;
@@ -18,7 +27,7 @@ export const researchInputSchema = z.object({
   jobId: z.string().uuid(),
   company: z.string().min(1),
   title: z.string().min(1),
-  jd: z.string().default(""),
+  jd: z.string().max(MAX_JD_CHARS).default(""),
 });
 export type ResearchInput = z.infer<typeof researchInputSchema>;
 
@@ -26,7 +35,7 @@ export const interviewPrepInputSchema = z.object({
   jobId: z.string().uuid(),
   company: z.string().min(1),
   title: z.string().min(1),
-  jd: z.string().min(1),
+  jd: z.string().min(1).max(MAX_JD_CHARS),
 });
 export type InterviewPrepInput = z.infer<typeof interviewPrepInputSchema>;
 
@@ -34,8 +43,8 @@ export const resumeTailorInputSchema = z.object({
   jobId: z.string().uuid(),
   company: z.string().min(1),
   title: z.string().min(1),
-  jd: z.string().min(1),
-  baseResume: z.string().min(1),
+  jd: z.string().min(1).max(MAX_JD_CHARS),
+  baseResume: z.string().min(1).max(MAX_RESUME_CHARS),
 });
 export type ResumeTailorInput = z.infer<typeof resumeTailorInputSchema>;
 

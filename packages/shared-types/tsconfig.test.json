@@ -1,0 +1,10 @@
+{
+  // Tests are compiled rather than run through Node's type stripping: that
+  // mode rejects parameter properties and decorators, both of which appear
+  // throughout the services.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-test",
+    "noEmit": false
+  }
+}

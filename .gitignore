@@ -16,6 +16,7 @@ node_modules/
 
 # ---- build output -----------------------------------------------------------
 dist/
+dist-test/
 build/
 out/
 *.tsbuildinfo
@@ -38,6 +39,8 @@ coverage/
 .nyc_output/
 test-results/
 playwright-report/
+blob-report/
+.playwright/
 
 # ---- logs -------------------------------------------------------------------
 *.log

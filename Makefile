@@ -1,8 +1,10 @@
 .DEFAULT_GOAL := help
 SHELL := /bin/bash
 COMPOSE := docker compose
+# Test stack: prod image targets + a mock Anthropic API, no dev overrides.
+COMPOSE_TEST := docker compose -f docker-compose.yml -f docker-compose.test.yml
 
-.PHONY: help env up up-d down reset migrate rebuild logs ps psql redis-cli health install build typecheck test clean
+.PHONY: help env up up-d down reset migrate rebuild logs ps psql redis-cli health install build typecheck test test-stack test-stack-down test-integration test-e2e test-all clean
 
 help: ## show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -58,8 +60,32 @@ build: ## build all packages/services
 typecheck: ## typecheck the whole workspace
 	pnpm turbo run typecheck
 
-test: ## run all tests
-	pnpm turbo run test
+test: ## run unit tests (fast, no services needed)
+	pnpm turbo run test --filter='./packages/*' --filter='./services/*'
+
+test-stack: env ## start the stack with a mocked Anthropic API
+	$(COMPOSE_TEST) up --build -d
+	@./infra/scripts/wait-for-healthy.sh
+	@$(COMPOSE_TEST) exec -w /app/services/auth-service auth-service npx prisma migrate deploy 2>/dev/null | tail -1
+	@$(COMPOSE_TEST) exec -w /app/services/jobs-service jobs-service npx prisma migrate deploy 2>/dev/null | tail -1
+	@$(COMPOSE_TEST) exec -w /app/services/resume-service resume-service npx prisma migrate deploy 2>/dev/null | tail -1
+	@$(COMPOSE_TEST) exec -w /app/services/ai-service ai-service npx prisma migrate deploy 2>/dev/null | tail -1
+
+test-stack-down: ## stop the test stack
+	$(COMPOSE_TEST) down
+
+test-integration: ## run integration tests (needs: make test-stack)
+	pnpm --filter @jobilee/integration-tests test
+
+test-e2e: ## run browser end-to-end tests (needs: make test-stack)
+	pnpm --filter @jobilee/e2e-tests test
+
+test-all: ## unit + integration + e2e, starting and stopping the stack
+	$(MAKE) test
+	$(MAKE) test-stack
+	$(MAKE) test-integration
+	$(MAKE) test-e2e
+	$(MAKE) test-stack-down
 
 clean: ## remove build output and node_modules
 	pnpm turbo run clean 2>/dev/null || true

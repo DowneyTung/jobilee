@@ -1,4 +1,4 @@
-import { baseEnvSchema, parseEnv } from "@jobilee/service-kit";
+import { baseEnvSchema, optionalUrl, parseEnv } from "@jobilee/service-kit";
 import { z } from "zod";
 
 const envSchema = baseEnvSchema.extend({
@@ -12,6 +12,12 @@ const envSchema = baseEnvSchema.extend({
    * prototype, where the key would be readable by anyone with devtools.
    */
   ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required"),
+  /**
+   * Overrides the API host. Set only by the test stack, which points it at a
+   * mock speaking the Messages API — so the real SDK and our real streaming,
+   * pause_turn, and error-classification code run under test.
+   */
+  ANTHROPIC_BASE_URL: optionalUrl,
 
   /** Model ids rotate; keep them in env, not in code. */
   AI_MODEL_GENERATION: z.string().min(1).default("claude-sonnet-5"),

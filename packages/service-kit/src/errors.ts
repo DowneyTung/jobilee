@@ -21,12 +21,21 @@ export class AppError extends HttpException {
   }
 }
 
+function isPayloadTooLarge(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { type?: string }).type === "entity.too.large"
+  );
+}
+
 const STATUS_TO_CODE: Record<number, ErrorCode> = {
   400: "BAD_REQUEST",
   401: "UNAUTHORIZED",
   403: "FORBIDDEN",
   404: "NOT_FOUND",
   409: "CONFLICT",
+  413: "PAYLOAD_TOO_LARGE",
   429: "RATE_LIMITED",
 };
 
@@ -59,6 +68,15 @@ export class ErrorEnvelopeFilter implements ExceptionFilter {
           requestId,
         }),
       );
+      return;
+    }
+
+    // body-parser rejects oversized requests before any handler runs; without
+    // this it surfaces as an opaque 500.
+    if (isPayloadTooLarge(exception)) {
+      response
+        .status(413)
+        .json(apiError("PAYLOAD_TOO_LARGE", "request body is too large", { requestId }));
       return;
     }
 

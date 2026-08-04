@@ -9,7 +9,8 @@ const timestamp = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", time
  */
 export function TailoredResumes({ jobId }: { jobId: string }) {
   const { data: versions, isLoading } = useTailoredResumes(jobId);
-  const [openId, setOpenId] = useState<string | null>(null);
+  // `undefined` renders the newest version expanded; see Artifacts.tsx.
+  const [openId, setOpenId] = useState<string | null | undefined>(undefined);
 
   if (isLoading) return <p className="muted tiny">Loading versions…</p>;
 
@@ -24,7 +25,7 @@ export function TailoredResumes({ jobId }: { jobId: string }) {
   return (
     <ul className="versions">
       {versions.map((version) => {
-        const open = openId === version.id;
+        const open = openId === undefined ? versions[0]?.id === version.id : openId === version.id;
         return (
           <li key={version.id}>
             <button

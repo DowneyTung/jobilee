@@ -34,6 +34,7 @@ export class GenerationService {
   ) {
     this.client = new Anthropic({
       apiKey: config.ANTHROPIC_API_KEY,
+      ...(config.ANTHROPIC_BASE_URL ? { baseURL: config.ANTHROPIC_BASE_URL } : {}),
       // The SDK retries 429/5xx with backoff on its own. Kept low because
       // BullMQ retries the whole job on top of this — see queue.service.ts.
       maxRetries: 2,

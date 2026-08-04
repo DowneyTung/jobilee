@@ -26,9 +26,14 @@ export class FilesService {
     private readonly storage: StorageService,
   ) {}
 
+  /**
+   * With a jobId, the files attached to that application. Without one, only
+   * unattached files — the settings page presents those as not belonging to a
+   * single application, so returning job-scoped files there would contradict it.
+   */
   async list(userId: string, jobId?: string): Promise<ResumeFile[]> {
     return this.prisma.resumeFile.findMany({
-      where: { userId, ...(jobId ? { jobId } : {}) },
+      where: { userId, jobId: jobId ?? null },
       orderBy: { createdAt: "desc" },
     });
   }

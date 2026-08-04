@@ -14,7 +14,10 @@ const timestamp = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", time
  * HTML renderer is how you get an injection bug. `<pre>` shows it verbatim.
  */
 export function Artifacts({ artifacts }: { artifacts: JobArtifact[] }) {
-  const [openId, setOpenId] = useState<string | null>(artifacts[0]?.id ?? null);
+  // `undefined` means "nothing chosen yet", which renders the first artifact
+  // expanded. Picking the initial value at mount would leave a just-generated
+  // brief collapsed, because there were no artifacts when the component mounted.
+  const [openId, setOpenId] = useState<string | null | undefined>(undefined);
 
   if (artifacts.length === 0) {
     return (
@@ -27,7 +30,7 @@ export function Artifacts({ artifacts }: { artifacts: JobArtifact[] }) {
   return (
     <ul className="versions">
       {artifacts.map((artifact) => {
-        const open = openId === artifact.id;
+        const open = openId === undefined ? artifacts[0]?.id === artifact.id : openId === artifact.id;
         return (
           <li key={artifact.id}>
             <button

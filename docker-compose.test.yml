@@ -1,0 +1,38 @@
+# Test overlay. Adds a stand-in Anthropic API and points ai-service at it, so
+# the generation paths can be exercised without a real key or a real bill.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml up -d
+#
+# Deliberately does NOT include docker-compose.override.yml: tests run against
+# the production image target, not the watch-mode dev stage.
+
+services:
+  mock-anthropic:
+    build:
+      context: .
+      dockerfile: tests/mock-anthropic/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MOCK_ANTHROPIC_PORT:-4010}:4010"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4010/__health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  ai-service:
+    environment:
+      # The SDK talks to the mock; everything downstream of the HTTP call —
+      # streaming, pause_turn, error classification — is the real code path.
+      ANTHROPIC_BASE_URL: http://mock-anthropic:4010
+      ANTHROPIC_API_KEY: sk-ant-test-not-a-real-key
+      # Short backoff so the retry test doesn't take a minute.
+      AI_MAX_ATTEMPTS: 3
+    depends_on:
+      mock-anthropic:
+        condition: service_healthy

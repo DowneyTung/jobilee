@@ -5,6 +5,10 @@ set -euo pipefail
 
 TIMEOUT="${TIMEOUT:-120}"
 SERVICES=(postgres redis minio auth-service jobs-service resume-service ai-service gateway)
+# Only present when the test overlay is active.
+if docker compose ps --services 2>/dev/null | grep -qx mock-anthropic; then
+  SERVICES+=(mock-anthropic)
+fi
 deadline=$(( $(date +%s) + TIMEOUT ))
 
 state_of() {

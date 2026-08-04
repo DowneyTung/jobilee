@@ -55,7 +55,8 @@ export class TokensService {
     }
     // A refresh token must never be accepted where an access token is required.
     if (claims.data.typ !== expected) {
-      throw new AppError("UNAUTHORIZED", `expected a ${expected} token`);
+      const article = expected === "access" ? "an" : "a";
+      throw new AppError("UNAUTHORIZED", `expected ${article} ${expected} token`);
     }
     return claims.data;
   }
