@@ -175,5 +175,9 @@ This repo is public. The rules that keep it safe to be public:
   `docker compose -f docker-compose.yml up`.
 - `infra/initdb` runs **only against an empty data directory**. After changing it,
   `make reset` to re-bootstrap.
+- Dev mode mounts each service's own `src`, so edits hot-reload. It deliberately
+  does **not** mount `packages/` — that would hide the built `dist/` inside the
+  image behind an unbuilt host tree, and `make up` would fail on a fresh clone.
+  After changing a shared package (or any dependency), run `make rebuild`.
 - Relative imports in TypeScript sources use `.ts` extensions (Node's native type
   stripping wants them); `rewriteRelativeImportExtensions` converts them on build.

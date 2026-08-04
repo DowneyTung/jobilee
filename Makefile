@@ -75,6 +75,7 @@ test-stack-down: ## stop the test stack
 	$(COMPOSE_TEST) down
 
 test-integration: ## run integration tests (needs: make test-stack)
+	pnpm turbo run build --filter='./packages/*'
 	pnpm --filter @jobilee/integration-tests test
 
 test-e2e: ## run browser end-to-end tests (needs: make test-stack)

@@ -4,10 +4,16 @@
 # interface, which would put a postgres with dev-default credentials on whatever
 # network you happen to be on. Keep the loopback prefix.
 #
-# Services build their `dev` stage and mount their source, so edits on the host
-# recompile inside the container. `node_modules` is masked with an anonymous
+# Services build their `dev` stage and mount their own `src`, so edits on the
+# host recompile inside the container. `node_modules` is masked with a named
 # volume so the container keeps the Linux binaries it installed at build time
 # rather than seeing the host's macOS ones.
+#
+# `packages/` is deliberately NOT mounted. Mounting it would hide the built
+# `dist/` inside the image behind the host's source tree, which on a fresh
+# clone has never been built — `make up` would then fail for everyone except
+# whoever had already run a local build. Changing a shared package needs
+# `make rebuild`, the same as changing a dependency.
 
 services:
   postgres:
@@ -24,7 +30,6 @@ services:
     volumes:
       - ./services/auth-service/src:/app/services/auth-service/src:ro
       - ./services/auth-service/prisma:/app/services/auth-service/prisma:ro
-      - ./packages:/app/packages:ro
       - auth_node_modules:/app/services/auth-service/node_modules
     environment:
       NODE_ENV: development
@@ -36,7 +41,6 @@ services:
     volumes:
       - ./services/jobs-service/src:/app/services/jobs-service/src:ro
       - ./services/jobs-service/prisma:/app/services/jobs-service/prisma:ro
-      - ./packages:/app/packages:ro
       - jobs_node_modules:/app/services/jobs-service/node_modules
     environment:
       NODE_ENV: development
@@ -48,7 +52,6 @@ services:
     volumes:
       - ./services/resume-service/src:/app/services/resume-service/src:ro
       - ./services/resume-service/prisma:/app/services/resume-service/prisma:ro
-      - ./packages:/app/packages:ro
       - resume_node_modules:/app/services/resume-service/node_modules
     environment:
       NODE_ENV: development
@@ -60,7 +63,6 @@ services:
     volumes:
       - ./services/ai-service/src:/app/services/ai-service/src:ro
       - ./services/ai-service/prisma:/app/services/ai-service/prisma:ro
-      - ./packages:/app/packages:ro
       - ai_node_modules:/app/services/ai-service/node_modules
     environment:
       NODE_ENV: development
@@ -71,7 +73,6 @@ services:
       target: dev
     volumes:
       - ./services/gateway/src:/app/services/gateway/src:ro
-      - ./packages:/app/packages:ro
       - gateway_node_modules:/app/services/gateway/node_modules
     environment:
       NODE_ENV: development
