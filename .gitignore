@@ -1,0 +1,76 @@
+# ---- secrets ----------------------------------------------------------------
+# .env holds DB credentials and ANTHROPIC_API_KEY. Only the template is tracked.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# ---- dependencies -----------------------------------------------------------
+node_modules/
+.pnpm-store/
+.yarn/
+.npm/
+
+# ---- build output -----------------------------------------------------------
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# ---- task/build caches ------------------------------------------------------
+.turbo/
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.vite/
+apps/web/dev-dist/
+
+# ---- prisma (generated client; migrations ARE tracked) ----------------------
+**/prisma/generated/
+**/node_modules/.prisma/
+
+# ---- tests / coverage -------------------------------------------------------
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# ---- logs -------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ---- local data (bind mounts, dumps, scratch) -------------------------------
+tmp/
+.tmp/
+data/
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+
+# ---- editors / tooling ------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+.history/
+
+# ---- os ---------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# ---- agent / local scratch --------------------------------------------------
+.claude/settings.local.json

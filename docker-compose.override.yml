@@ -1,0 +1,13 @@
+# Dev-only overrides. Applied automatically by `docker compose up`.
+# Phase 0: publish infra ports to the host so you can reach them from local
+# tooling (psql, redis-cli, prisma migrate run outside a container).
+# Later phases add source mounts + watch-mode commands for the services here.
+
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"

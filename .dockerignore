@@ -1,0 +1,23 @@
+# Keep build contexts small and secrets out of images.
+**/node_modules
+**/dist
+**/build
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+**/*.log
+**/.DS_Store
+.idea
+.vscode
+
+README.md
+ARCHITECTURE.md
+Makefile
+docker-compose*.yml
