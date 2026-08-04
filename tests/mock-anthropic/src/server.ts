@@ -26,6 +26,8 @@ export const SCENARIOS = [
   "truncated",
   /** A well-formed stream carrying no text blocks at all. */
   "empty",
+  /** Succeeds, but slowly — lets tests observe the in-flight state. */
+  "slow",
 ] as const;
 export type Scenario = (typeof SCENARIOS)[number];
 
@@ -187,6 +189,14 @@ function respondToMessages(res: ServerResponse, state: MockState): void {
 
     case "empty":
       return streamMessage(res, { text: "", stopReason: "end_turn" });
+
+    case "slow":
+      // Long enough for a test to interrupt the flow or assert on a disabled
+      // button, short enough not to dominate the suite's runtime.
+      setTimeout(() => {
+        streamMessage(res, { text: DEFAULT_TEXT, stopReason: "end_turn" });
+      }, 4_000);
+      return;
 
     case "success":
     default:

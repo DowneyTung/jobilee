@@ -39,10 +39,17 @@ export function Board() {
             {STAGES.map((stage) => {
               const inStage = byStage.get(stage) ?? [];
               return (
-                <div className={`stage${stage === "REJECTED" ? " stage-muted" : ""}`} key={stage}>
+                <div
+                  className={`stage${stage === "REJECTED" ? " stage-muted" : ""}`}
+                  key={stage}
+                  role="group"
+                  aria-label={`${STAGE_LABELS[stage]} stage, ${inStage.length} job${inStage.length === 1 ? "" : "s"}`}
+                >
                   <div className="stage-head">
                     <span className="stage-name">{STAGE_LABELS[stage]}</span>
-                    <span className="stage-count">{inStage.length}</span>
+                    <span className="stage-count" aria-hidden="true">
+                      {inStage.length}
+                    </span>
                   </div>
                   <div className="stage-body">
                     {inStage.map((job) => (

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { DeliveryService } from "../delivery/delivery.service.ts";
 import { GenerationService } from "../generation/generation.service.ts";
 import { GenerationWorker } from "../queue/generation.worker.ts";
 import { QueueService } from "../queue/queue.service.ts";
@@ -16,6 +17,7 @@ import { TasksService } from "./tasks.service.ts";
     QuotaService,
     GenerationService,
     GenerationWorker,
+    DeliveryService,
     TaskEventsService,
   ],
   exports: [QuotaService],

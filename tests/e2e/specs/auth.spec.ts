@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { register, signIn, uniqueUser } from "./helpers.ts";
+import { AuthPage, uniqueUser } from "../pages/index.ts";
 
 test.describe("authentication", () => {
   test("an unauthenticated visitor is sent to the login screen", async ({ page }) => {
@@ -9,53 +9,47 @@ test.describe("authentication", () => {
   });
 
   test("register, then land on an empty board", async ({ page }) => {
-    await register(page, uniqueUser("e2e-register"));
+    const board = await new AuthPage(page).register(uniqueUser("e2e-register"));
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText("No applications yet")).toBeVisible();
-    // The pipeline rail is the app's core affordance.
+    await board.expectEmpty();
     await expect(page.getByRole("region", { name: "Pipeline stages" })).toBeVisible();
   });
 
   test("a wrong password shows an error and stays on the login screen", async ({ page }) => {
+    const auth = new AuthPage(page);
     const user = uniqueUser("e2e-badpass");
-    await register(page, user);
-    await page.getByRole("button", { name: "Sign out" }).click();
+    const board = await auth.register(user);
+    await board.signOut();
 
-    await page.getByLabel("Email").fill(user.email);
-    await page.getByLabel("Password").fill("definitely-not-the-password");
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await auth.signInExpectingFailure({ ...user, password: "definitely-not-it" });
 
-    await expect(page.getByRole("alert")).toContainText(/invalid email or password/i);
+    await expect(auth.alert).toContainText(/invalid email or password/i);
     await expect(page).toHaveURL(/\/login$/);
   });
 
   test("the session survives a full page reload", async ({ page }) => {
     // The access token lives only in memory, so this exercises the refresh path.
-    await register(page, uniqueUser("e2e-reload"));
-
+    const board = await new AuthPage(page).register(uniqueUser("e2e-reload"));
     await page.reload();
-
-    await expect(page.getByRole("button", { name: "Add job" })).toBeVisible();
-    await expect(page).toHaveURL(/\/$/);
+    await board.expectLoaded();
   });
 
   test("signing out clears the session and protects the board", async ({ page }) => {
-    await register(page, uniqueUser("e2e-signout"));
-    await page.getByRole("button", { name: "Sign out" }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    const board = await new AuthPage(page).register(uniqueUser("e2e-signout"));
+    await board.signOut();
 
-    // A direct navigation must not get back in.
     await page.goto("/");
     await expect(page).toHaveURL(/\/login$/);
   });
 
   test("an existing account can sign back in", async ({ page }) => {
+    const auth = new AuthPage(page);
     const user = uniqueUser("e2e-signin");
-    await register(page, user);
-    await page.getByRole("button", { name: "Sign out" }).click();
+    const board = await auth.register(user);
+    await board.signOut();
 
-    await signIn(page, user);
+    await auth.signIn(user);
     await expect(page.getByText(user.email)).toBeVisible();
   });
 });

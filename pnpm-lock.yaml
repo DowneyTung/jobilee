@@ -129,6 +129,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.115.0
         version: 0.115.0(zod@3.25.76)
+      '@jobilee/http-client':
+        specifier: workspace:*
+        version: link:../../packages/http-client
       '@jobilee/logger':
         specifier: workspace:*
         version: link:../../packages/logger

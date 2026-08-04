@@ -1,8 +1,4 @@
-import {
-  splitTailorResult,
-  type ArtifactType,
-  type JobDetail,
-} from "@jobilee/shared-types";
+import type { JobDetail } from "@jobilee/shared-types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useGeneration } from "../api/ai.ts";
@@ -19,10 +15,13 @@ const LABELS: Record<Kind, { idle: string; queued: string; running: string }> = 
 };
 
 /**
- * The AI entry point on a job. Each button creates a task, polls it, then
- * persists the result to whichever service owns that content — jobs-service for
- * research and prep, resume-service for tailored resumes. ai-service never
- * writes domain data itself.
+ * The AI entry point on a job.
+ *
+ * This component starts a generation and watches it, but it does not save the
+ * result — ai-service delivers finished work to whichever service owns it, and
+ * only reports SUCCEEDED once that has happened. Persisting from here made the
+ * browser tab load-bearing: closing or reloading the page mid-generation lost a
+ * result that had already been produced and paid for.
  */
 export function GenerationPanel({ job }: { job: JobDetail }) {
   const queryClient = useQueryClient();
@@ -32,47 +31,19 @@ export function GenerationPanel({ job }: { job: JobDetail }) {
 
   const hasJd = job.jd.trim().length > 0;
 
-  async function persistArtifact(type: ArtifactType, content: string): Promise<void> {
-    await apiFetch(`/jobs/${job.id}/artifacts/${type}`, { method: "PUT", body: { content } });
-    await queryClient.invalidateQueries({ queryKey: jobKeys.detail(job.id) });
-  }
-
-  async function persistTailored(result: string): Promise<void> {
-    const { gapAnalysis, content } = splitTailorResult(result);
-    await apiFetch("/resume/tailored", {
-      method: "POST",
-      body: { jobId: job.id, gapAnalysis, content },
-    });
-    await queryClient.invalidateQueries({ queryKey: resumeKeys.tailored(job.id) });
-  }
-
   async function start(kind: Kind): Promise<void> {
     setActive(kind);
     setNotice(null);
 
     try {
-      let result: string | null = null;
-
-      if (kind === "RESEARCH") {
-        result = await generation.run({
-          type: "RESEARCH",
-          input: { jobId: job.id, company: job.company, title: job.title, jd: job.jd },
-        });
-        if (result) await persistArtifact("RESEARCH", result);
-      } else if (kind === "INTERVIEW_PREP") {
-        result = await generation.run({
-          type: "INTERVIEW_PREP",
-          input: { jobId: job.id, company: job.company, title: job.title, jd: job.jd },
-        });
-        if (result) await persistArtifact("INTERVIEW_PREP", result);
-      } else {
+      if (kind === "RESUME_TAILOR") {
         // Tailoring needs the base resume, which lives in resume-service.
         const base = await apiFetch<{ content: string }>("/resume/base");
         if (!base.content.trim()) {
           setNotice("Add your base resume under “Resume” before tailoring.");
           return;
         }
-        result = await generation.run({
+        const saved = await generation.run({
           type: "RESUME_TAILOR",
           input: {
             jobId: job.id,
@@ -82,15 +53,24 @@ export function GenerationPanel({ job }: { job: JobDetail }) {
             baseResume: base.content,
           },
         });
-        if (result) await persistTailored(result);
+        if (saved !== null) {
+          await queryClient.invalidateQueries({ queryKey: resumeKeys.tailored(job.id) });
+          setNotice("Saved.");
+        }
+        return;
       }
 
-      if (result) setNotice("Saved.");
+      const saved = await generation.run({
+        type: kind,
+        input: { jobId: job.id, company: job.company, title: job.title, jd: job.jd },
+      });
+      if (saved !== null) {
+        await queryClient.invalidateQueries({ queryKey: jobKeys.detail(job.id) });
+        setNotice("Saved.");
+      }
     } catch (cause) {
       setNotice(
-        cause instanceof ApiError
-          ? `Generated, but saving failed: ${cause.message}`
-          : "Generated, but saving failed.",
+        cause instanceof ApiError ? `Could not start: ${cause.message}` : "Could not start.",
       );
     } finally {
       setActive(null);
@@ -103,7 +83,7 @@ export function GenerationPanel({ job }: { job: JobDetail }) {
   };
 
   return (
-    <section className="card">
+    <section className="card" aria-label="AI assistance">
       <h2>AI assistance</h2>
       {!hasJd && (
         <p className="muted tiny">
@@ -127,7 +107,7 @@ export function GenerationPanel({ job }: { job: JobDetail }) {
 
       {generation.running && (
         <p className="muted tiny" role="status" aria-live="polite">
-          This usually takes 20–40 seconds. You can leave this page — the result is saved
+          This usually takes 20–40 seconds. You can close this page — the result is saved
           when it finishes.
         </p>
       )}

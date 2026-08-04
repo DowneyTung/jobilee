@@ -23,7 +23,7 @@ COPY apps/web apps/web
 # has to be known here.
 ARG VITE_API_BASE=http://localhost:8080/api
 ENV VITE_API_BASE=$VITE_API_BASE
-RUN pnpm --filter @jobilee/shared-types run build \
+RUN pnpm --filter './packages/*' run build \
   && pnpm --filter @jobilee/web run build
 
 FROM build AS dev

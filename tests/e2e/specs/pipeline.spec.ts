@@ -1,77 +1,77 @@
 import { expect, test } from "@playwright/test";
-import { addJob, openJob, register, uniqueUser } from "./helpers.ts";
+import { AuthPage, uniqueUser } from "../pages/index.ts";
 
 test.describe("the job pipeline", () => {
   test("add a job, move it through stages, and see the history", async ({ page }) => {
-    await register(page, uniqueUser("e2e-pipeline"));
+    const board = await new AuthPage(page).register(uniqueUser("e2e-pipeline"));
 
-    await addJob(page, {
+    await board.addJob({
       company: "Northwind Traders",
       title: "Staff Backend Engineer",
       location: "Remote (EU)",
       jd: "Own the order-processing platform. Go, Postgres, event-driven services.",
     });
+    await board.expectJobInStage("Northwind Traders", "Saved");
 
-    // The card lands in SAVED, and the column count reflects it.
-    const savedColumn = page.locator(".stage").filter({ hasText: "SAVED" });
-    await expect(savedColumn.getByText("Northwind Traders")).toBeVisible();
-
-    await openJob(page, "Northwind Traders");
+    const job = await board.openJob("Northwind Traders");
     await expect(page.getByText("Staff Backend Engineer")).toBeVisible();
 
-    await page.getByLabel("Stage").selectOption("APPLIED");
-    await expect(page.getByRole("listitem").filter({ hasText: "Applied" })).toBeVisible();
-
-    await page.getByLabel("Stage").selectOption("PHONE_SCREEN");
-    await expect(page.getByRole("listitem").filter({ hasText: "Phone screen" })).toBeVisible();
+    await job.moveToStage("APPLIED");
+    await job.moveToStage("PHONE_SCREEN");
 
     // History accumulates rather than replacing.
-    const history = page.locator(".timeline li");
-    await expect(history).toHaveCount(3);
-    await expect(history.nth(0)).toContainText("Saved");
-    await expect(history.nth(2)).toContainText("Phone screen");
+    await job.expectHistory(["Saved", "Applied", "Phone screen"]);
   });
 
   test("the stage move survives a reload and shows on the board", async ({ page }) => {
-    await register(page, uniqueUser("e2e-persist"));
-    await addJob(page, { company: "Contoso", title: "SRE" });
-    await openJob(page, "Contoso");
+    const board = await new AuthPage(page).register(uniqueUser("e2e-persist"));
+    await board.addJob({ company: "Contoso", title: "SRE" });
 
-    await page.getByLabel("Stage").selectOption("TECHNICAL");
-    await expect(page.locator(".timeline li")).toHaveCount(2);
+    const job = await board.openJob("Contoso");
+    await job.moveToStage("TECHNICAL");
+    await job.expectHistory(["Saved", "Technical"]);
 
     await page.reload();
-    await expect(page.getByLabel("Stage")).toHaveValue("TECHNICAL");
+    await expect(job.stageSelect).toHaveValue("TECHNICAL");
 
-    await page.getByRole("link", { name: "← Board" }).click();
-    const technical = page.locator(".stage").filter({ hasText: "TECHNICAL" });
-    await expect(technical.getByText("Contoso")).toBeVisible();
+    const backToBoard = await job.goToBoard();
+    await backToBoard.expectJobInStage("Contoso", "Technical");
+  });
+
+  test("stage counts on the board reflect where jobs are", async ({ page }) => {
+    const board = await new AuthPage(page).register(uniqueUser("e2e-counts"));
+    await board.addJob({ company: "Alpha Co", title: "Engineer" });
+    await board.addJob({ company: "Beta Co", title: "Engineer" });
+    await board.expectStageCount("Saved", 2);
+
+    const job = await board.openJob("Alpha Co");
+    await job.moveToStage("ONSITE");
+    const back = await job.goToBoard();
+
+    await back.expectStageCount("Saved", 1);
+    await back.expectStageCount("Onsite", 1);
   });
 
   test("notes and the job description save and persist", async ({ page }) => {
-    await register(page, uniqueUser("e2e-notes"));
-    await addJob(page, { company: "Fabrikam", title: "Platform Engineer" });
-    await openJob(page, "Fabrikam");
+    const board = await new AuthPage(page).register(uniqueUser("e2e-notes"));
+    await board.addJob({ company: "Fabrikam", title: "Platform Engineer" });
 
-    await page.getByLabel("Notes").fill("Recruiter: Sam Okafor. Screen Tuesday 10:00.");
-    await page.getByRole("button", { name: "Save changes" }).click();
-
-    // The button reverts to "Saved" once the edit is no longer dirty.
-    await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+    const job = await board.openJob("Fabrikam");
+    await job.setNotes("Recruiter: Sam Okafor. Screen Tuesday 10:00.");
+    await job.save();
 
     await page.reload();
     await expect(page.getByLabel("Notes")).toHaveValue(/Sam Okafor/);
   });
 
   test("deleting a job takes two clicks and removes it from the board", async ({ page }) => {
-    await register(page, uniqueUser("e2e-delete"));
-    await addJob(page, { company: "Temporary Co", title: "Contractor" });
-    await openJob(page, "Temporary Co");
+    const board = await new AuthPage(page).register(uniqueUser("e2e-delete"));
+    await board.addJob({ company: "Temporary Co", title: "Contractor" });
 
+    const job = await board.openJob("Temporary Co");
     // A single click only arms the confirmation — no blocking browser dialog.
     await page.getByRole("button", { name: "Delete job" }).click();
     await expect(page.getByText(/cannot be undone/i)).toBeVisible();
-
     await page.getByRole("button", { name: "Delete permanently" }).click();
 
     await expect(page).toHaveURL(/\/$/);
@@ -79,12 +79,11 @@ test.describe("the job pipeline", () => {
   });
 
   test("cancelling a delete keeps the job", async ({ page }) => {
-    await register(page, uniqueUser("e2e-nodelete"));
-    await addJob(page, { company: "Keeper Inc", title: "Engineer" });
-    await openJob(page, "Keeper Inc");
+    const board = await new AuthPage(page).register(uniqueUser("e2e-nodelete"));
+    await board.addJob({ company: "Keeper Inc", title: "Engineer" });
 
-    await page.getByRole("button", { name: "Delete job" }).click();
-    await page.getByRole("button", { name: "Cancel" }).click();
+    const job = await board.openJob("Keeper Inc");
+    await job.cancelDelete();
 
     await expect(page.getByRole("heading", { name: "Keeper Inc" })).toBeVisible();
   });

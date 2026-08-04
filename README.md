@@ -88,8 +88,8 @@ Three layers, each with a different job.
 | Layer | Command | Needs | What it covers |
 |---|---|---|---|
 | **Unit** (76) | `make test` | nothing | Pure logic: token issue/verify, gateway routing and header stripping, prompt construction, retry classification, env parsing, the shared packages. Runs in ~2s. |
-| **Integration** (49) | `make test-stack` then `make test-integration` | the test stack | Every service through the gateway with real Postgres, Redis, and MinIO — auth flows, tenant isolation, the pipeline, signed-URL downloads, and the whole AI task lifecycle. |
-| **E2E** (23) | `make test-stack` then `make test-e2e` | the test stack + Chromium | The browser: register, move a job through stages, generate, upload and download a file, and the failure states. |
+| **Integration** (51) | `make test-stack` then `make test-integration` | the test stack | Every service through the gateway with real Postgres, Redis, and MinIO — auth flows, tenant isolation, the pipeline, signed-URL downloads, and the whole AI task lifecycle. |
+| **E2E** (41) | `make test-stack` then `make test-e2e` | the test stack + Chromium | The browser, via light page objects in `tests/e2e/pages`: the happy paths, plus interrupted flows, double submission, deep links to other people's data, and session expiry. |
 
 `make test-all` runs all three, starting and stopping the stack around them.
 
@@ -146,6 +146,18 @@ the proxy rewrites the path, so one endpoint is one series.
 
 `/metrics` and `/health` sit outside `/api`, so they need no token. Put them behind
 your reverse proxy or a trusted network in a real deployment.
+
+### Why generation results are durable
+
+ai-service delivers a finished generation to whichever service owns it — jobs-service
+for research and prep, resume-service for tailored resumes — and only then reports
+`SUCCEEDED`. The browser is not involved in saving.
+
+This used to be the client's job, which made the tab load-bearing: reloading or
+navigating away mid-generation lost a result that had already been produced and
+billed, with no way to recover it. The worker is also idempotent — a stored result is
+reused rather than regenerated — so a delivery retry costs an HTTP call, never a
+second generation.
 
 ## Security
 

@@ -273,27 +273,99 @@ describe("prompt content reaching the model", () => {
 });
 
 describe("results are persisted by the service that owns them", () => {
-  it("research is stored on the job, not in ai-service", async () => {
+  it("research is attached to the job by ai-service, with no client involved", async () => {
     await setScenario("success");
+    const solo = await newUser("delivery");
+    const soloJob = await api<{ id: string }>("/api/jobs", {
+      method: "POST",
+      token: solo.token,
+      body: { company: "Delivery Co", title: "Engineer", jd: JD },
+    });
 
     const { taskId } = await api<CreateTaskResponse>("/api/ai/tasks", {
       method: "POST",
-      token: session.token,
-      body: { type: "RESEARCH", input: { jobId, company: "Acme", title: "SWE", jd: JD } },
+      token: solo.token,
+      body: {
+        type: "RESEARCH",
+        input: { jobId: soloJob.id, company: "Delivery Co", title: "Engineer", jd: JD },
+      },
     });
-    const task = await awaitTask(session, taskId);
+    await awaitTask(solo, taskId);
 
-    // The web app performs this step after polling completes.
-    await api(`/api/jobs/${jobId}/artifacts/RESEARCH`, {
-      method: "PUT",
-      token: session.token,
-      body: { content: task.result },
-    });
-
-    const job = await api<JobDetail>(`/api/jobs/${jobId}`, { token: session.token });
+    // Nothing here wrote the artifact — ai-service delivered it. The browser
+    // used to do this, which lost the result if the tab closed mid-generation.
+    const job = await api<JobDetail>(`/api/jobs/${soloJob.id}`, { token: solo.token });
     const research = job.artifacts.find((a) => a.type === "RESEARCH");
-    assert.ok(research, "research artifact was not attached to the job");
+    assert.ok(research, "ai-service did not deliver the artifact");
     assert.match(research.content, /## What they do/);
+  });
+
+  it("SUCCEEDED is only reported after the content has been delivered", async () => {
+    // Ordering matters: a client that sees SUCCEEDED must be able to rely on
+    // the content already being readable from its owning service.
+    await setScenario("success");
+    const solo = await newUser("ordering");
+    const soloJob = await api<{ id: string }>("/api/jobs", {
+      method: "POST",
+      token: solo.token,
+      body: { company: "Ordering Co", title: "Engineer", jd: JD },
+    });
+
+    const { taskId } = await api<CreateTaskResponse>("/api/ai/tasks", {
+      method: "POST",
+      token: solo.token,
+      body: {
+        type: "RESEARCH",
+        input: { jobId: soloJob.id, company: "Ordering Co", title: "Engineer", jd: JD },
+      },
+    });
+    const task = await awaitTask(solo, taskId);
+    assert.equal(task.status, "SUCCEEDED");
+
+    // Read immediately, with no grace period.
+    const job = await api<JobDetail>(`/api/jobs/${soloJob.id}`, { token: solo.token });
+    assert.ok(
+      job.artifacts.some((a) => a.type === "RESEARCH"),
+      "SUCCEEDED was reported before the artifact was readable",
+    );
+  });
+
+  it("a tailored resume is delivered to resume-service by ai-service", async () => {
+    await setScenario("success");
+    const solo = await newUser("tailordelivery");
+    const soloJob = await api<{ id: string }>("/api/jobs", {
+      method: "POST",
+      token: solo.token,
+      body: { company: "Tailor Co", title: "Engineer", jd: JD },
+    });
+    await api("/api/resume/base", {
+      method: "PUT",
+      token: solo.token,
+      body: { content: "# Ada Lovelace\n\nAnalytical engines." },
+    });
+
+    const { taskId } = await api<CreateTaskResponse>("/api/ai/tasks", {
+      method: "POST",
+      token: solo.token,
+      body: {
+        type: "RESUME_TAILOR",
+        input: {
+          jobId: soloJob.id,
+          company: "Tailor Co",
+          title: "Engineer",
+          jd: JD,
+          baseResume: "# Ada Lovelace\n\nAnalytical engines.",
+        },
+      },
+    });
+    await awaitTask(solo, taskId);
+
+    const versions = await api<TailoredResume[]>(
+      `/api/resume/tailored?jobId=${soloJob.id}`,
+      { token: solo.token },
+    );
+    assert.equal(versions.length, 1, "no tailored version was delivered");
+    assert.equal(versions[0]?.version, 1);
   });
 
   it("a tailored resume becomes a new immutable version", async () => {

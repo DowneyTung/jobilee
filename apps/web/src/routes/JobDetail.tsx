@@ -98,7 +98,7 @@ export function JobDetail() {
 
       <section className="card">
         <h2>History</h2>
-        <ol className="timeline">
+        <ol className="timeline" aria-label="Stage history">
           {job.events.map((event) => (
             <li key={event.id}>
               <span className="dot" aria-hidden="true" />
@@ -147,17 +147,17 @@ export function JobDetail() {
 
       <GenerationPanel job={job} />
 
-      <section className="card">
+      <section className="card" aria-label="Research and prep">
         <h2>Research &amp; prep</h2>
         <Artifacts artifacts={job.artifacts} />
       </section>
 
-      <section className="card">
+      <section className="card" aria-label="Tailored resumes">
         <h2>Tailored resumes</h2>
         <TailoredResumes jobId={job.id} />
       </section>
 
-      <section className="card">
+      <section className="card" aria-label="Files">
         <h2>Files</h2>
         <p className="muted tiny">
           The exact PDF or DOCX you sent for this application.

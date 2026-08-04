@@ -19,6 +19,13 @@ const envSchema = baseEnvSchema.extend({
    */
   ANTHROPIC_BASE_URL: optionalUrl,
 
+  /**
+   * Where finished generations are delivered. ai-service stores no domain
+   * content of its own — see delivery.service.ts.
+   */
+  JOBS_SERVICE_URL: z.string().url(),
+  RESUME_SERVICE_URL: z.string().url(),
+
   /** Model ids rotate; keep them in env, not in code. */
   AI_MODEL_GENERATION: z.string().min(1).default("claude-sonnet-5"),
   AI_MODEL_CHEAP: z.string().min(1).default("claude-haiku-4-5"),

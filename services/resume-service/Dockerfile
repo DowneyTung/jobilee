@@ -28,7 +28,9 @@ FROM deps AS build
 COPY tsconfig.base.json ./
 COPY packages packages
 COPY services/resume-service services/resume-service
-RUN pnpm --filter @jobilee/shared-types --filter @jobilee/logger --filter @jobilee/service-kit run build \
+# Build every workspace package, not an enumerated subset: an omitted one
+# fails the service build with a module-not-found that is easy to miss.
+RUN pnpm --filter './packages/*' run build \
   && pnpm --filter @jobilee/resume-service run build
 
 # ---- dev --------------------------------------------------------------------

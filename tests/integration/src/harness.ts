@@ -104,7 +104,8 @@ export type Scenario =
   | "auth_error"
   | "server_error"
   | "truncated"
-  | "empty";
+  | "empty"
+  | "slow";
 
 export async function setScenario(scenario: Scenario): Promise<void> {
   const response = await fetch(`${MOCK_ANTHROPIC}/__control`, {

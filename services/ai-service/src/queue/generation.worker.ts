@@ -9,6 +9,7 @@ import { CONFIG, LOGGER } from "@jobilee/service-kit";
 import { UnrecoverableError, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import type { Config } from "../config.ts";
+import { DeliveryService } from "../delivery/delivery.service.ts";
 import { GenerationService, describeFailure } from "../generation/generation.service.ts";
 import { PrismaService } from "../prisma/prisma.service.ts";
 import { QuotaService } from "../quota/quota.service.ts";
@@ -30,6 +31,7 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
     @Inject(LOGGER) private readonly log: Logger,
     private readonly prisma: PrismaService,
     private readonly generation: GenerationService,
+    private readonly delivery: DeliveryService,
     private readonly quota: QuotaService,
     private readonly events: TaskEventsService,
   ) {}
@@ -68,9 +70,25 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
     await this.connection?.quit();
   }
 
+  /**
+   * Generate, then hand the result to the service that owns it, and only then
+   * mark the task SUCCEEDED. Ordering it this way means a client that sees
+   * SUCCEEDED can rely on the content already being persisted.
+   *
+   * The step is idempotent: if a previous attempt already produced a result,
+   * generation is skipped entirely. A delivery failure therefore costs a
+   * retried HTTP call, never a second billed generation.
+   */
   private async process(data: GenerationJob, attemptsMade: number): Promise<void> {
     const { taskId, userId, request } = data;
     const startedAt = Date.now();
+
+    const existing = await this.prisma.generationTask.findUnique({ where: { id: taskId } });
+    if (!existing) {
+      // The task row is gone (deleted user, wiped database) — nothing to do,
+      // and retrying will not bring it back.
+      throw new UnrecoverableError(`task ${taskId} no longer exists`);
+    }
 
     await this.prisma.generationTask.update({
       where: { id: taskId },
@@ -79,35 +97,49 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
     await this.events.publish({ taskId, status: "RUNNING" });
 
     try {
-      const result = await this.generation.generate(request);
+      let result = existing.result;
+      let inputTokens = existing.inputTokens ?? 0;
+      let outputTokens = existing.outputTokens ?? 0;
+
+      if (result === null) {
+        const generated = await this.generation.generate(request);
+        result = generated.text;
+        inputTokens = generated.inputTokens;
+        outputTokens = generated.outputTokens;
+
+        // Persisted before delivery is attempted, so a delivery failure can
+        // never cost the user a second generation.
+        await this.prisma.generationTask.update({
+          where: { id: taskId },
+          data: { result, inputTokens, outputTokens },
+        });
+      } else {
+        this.log.info("reusing an already-generated result", { taskId, attemptsMade });
+      }
+
+      await this.delivery.deliver(userId, request, result);
 
       await this.prisma.generationTask.update({
         where: { id: taskId },
-        data: {
-          status: "SUCCEEDED",
-          result: result.text,
-          inputTokens: result.inputTokens,
-          outputTokens: result.outputTokens,
-          error: null,
-        },
+        data: { status: "SUCCEEDED", error: null },
       });
-
-      await this.events.publish({ taskId, status: "SUCCEEDED", result: result.text });
+      await this.events.publish({ taskId, status: "SUCCEEDED", result });
 
       this.log.info("generation succeeded", {
         taskId,
         userId,
         type: request.type,
         durationMs: Date.now() - startedAt,
-        inputTokens: result.inputTokens,
-        outputTokens: result.outputTokens,
+        inputTokens,
+        outputTokens,
       });
     } catch (error) {
       const { message, retryable } = describeFailure(error);
       const attemptsLeft = this.config.AI_MAX_ATTEMPTS - (attemptsMade + 1);
 
       if (retryable && attemptsLeft > 0) {
-        // Leave the row RUNNING; BullMQ will call us again after backoff.
+        // Leave the row RUNNING; BullMQ will call us again after backoff, and
+        // any result already stored is reused rather than regenerated.
         this.log.warn("generation attempt failed, retrying", {
           taskId,
           type: request.type,
@@ -121,7 +153,7 @@ export class GenerationWorker implements OnModuleInit, OnModuleDestroy {
         data: { status: "FAILED", error: message },
       });
       await this.events.publish({ taskId, status: "FAILED", error: message });
-      // The user was charged a quota unit for work that produced nothing.
+      // The user was charged a quota unit for work they cannot see.
       await this.quota.refund(userId).catch(() => undefined);
 
       this.log.error("generation failed permanently", error, {

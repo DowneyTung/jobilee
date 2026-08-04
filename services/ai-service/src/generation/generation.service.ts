@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import Anthropic from "@anthropic-ai/sdk";
 import type { Logger } from "@jobilee/logger";
+import { HttpError } from "@jobilee/http-client";
 import { AppError, CONFIG, LOGGER } from "@jobilee/service-kit";
 import type { CreateTaskRequest } from "@jobilee/shared-types";
 import type { Config } from "../config.ts";
@@ -136,6 +137,14 @@ export class GenerationService {
 export function describeFailure(error: unknown): { message: string; retryable: boolean } {
   if (error instanceof AppError) {
     return { message: error.message, retryable: false };
+  }
+  // Delivery to jobs-service or resume-service, not the model. The text was
+  // generated and stored; only saving it to its owner failed.
+  if (error instanceof HttpError) {
+    return {
+      message: "Generated, but could not be saved. Please try again.",
+      retryable: error.retryable,
+    };
   }
   if (error instanceof Anthropic.RateLimitError) {
     return { message: "The AI service is busy right now. Please try again shortly.", retryable: true };

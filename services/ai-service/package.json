@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
+    "@jobilee/http-client": "workspace:*",
     "@jobilee/logger": "workspace:*",
     "@jobilee/service-kit": "workspace:*",
     "@jobilee/shared-types": "workspace:*",
