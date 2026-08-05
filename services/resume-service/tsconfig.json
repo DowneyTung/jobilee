@@ -8,7 +8,10 @@
     // decorators working against an ES2022 target.
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    // @types/multer augments the global Express namespace with Express.Multer.
+    // TypeScript 7 only loads @types packages that are named here.
+    "types": ["node", "multer"]
   },
   "include": ["src/**/*"]
 }

@@ -5,8 +5,21 @@ import type {
   CreateTailoredResumeRequest,
   TailoredResume,
 } from "@jobilee/shared-types";
-import { Prisma } from "../../generated/prisma/index.js";
 import { PrismaService } from "../prisma/prisma.service.ts";
+
+/**
+ * Prisma's unique-constraint violation. Matched on the error code rather than
+ * `instanceof`: the v7 client re-exports the error class through its runtime,
+ * where it no longer narrows, and class identity breaks anyway if two copies of
+ * the client are ever loaded.
+ */
+function isUniqueConstraintViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "P2002"
+  );
+}
 
 /** How many times to re-derive the next version when writers collide. */
 const VERSION_RETRIES = 5;
@@ -72,9 +85,7 @@ export class ResumeService {
           },
         });
       } catch (error) {
-        const lostRace =
-          error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
-        if (!lostRace) throw error;
+        if (!isUniqueConstraintViolation(error)) throw error;
       }
     }
     throw new AppError("CONFLICT", "could not allocate a resume version, please retry");

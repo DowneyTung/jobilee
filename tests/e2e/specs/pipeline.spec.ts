@@ -68,7 +68,7 @@ test.describe("the job pipeline", () => {
     const board = await new AuthPage(page).register(uniqueUser("e2e-delete"));
     await board.addJob({ company: "Temporary Co", title: "Contractor" });
 
-    const job = await board.openJob("Temporary Co");
+    await board.openJob("Temporary Co");
     // A single click only arms the confirmation — no blocking browser dialog.
     await page.getByRole("button", { name: "Delete job" }).click();
     await expect(page.getByText(/cannot be undone/i)).toBeVisible();
