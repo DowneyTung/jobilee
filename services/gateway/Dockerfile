@@ -19,10 +19,10 @@ FROM deps AS build
 COPY tsconfig.base.json ./
 COPY packages packages
 COPY services/gateway services/gateway
-# Build every workspace package, not an enumerated subset: an omitted one
-# fails the service build with a module-not-found that is easy to miss.
-RUN pnpm --filter './packages/*' run build \
-  && pnpm --filter @jobilee/gateway run build
+# `...` builds the package and its dependencies, in topological order.
+# An enumerated list of packages goes stale the moment a service gains a
+# new workspace dependency.
+RUN pnpm --filter @jobilee/gateway... run build
 
 FROM build AS dev
 ENV NODE_ENV=development

@@ -28,10 +28,10 @@ FROM deps AS build
 COPY tsconfig.base.json ./
 COPY packages packages
 COPY services/auth-service services/auth-service
-# Build every workspace package, not an enumerated subset: an omitted one
-# fails the service build with a module-not-found that is easy to miss.
-RUN pnpm --filter './packages/*' run build \
-  && pnpm --filter @jobilee/auth-service run build
+# `...` builds the package and its dependencies, in topological order.
+# An enumerated list of packages goes stale the moment a service gains a
+# new workspace dependency.
+RUN pnpm --filter @jobilee/auth-service... run build
 
 # ---- dev --------------------------------------------------------------------
 # Used by docker-compose.override.yml, which mounts source over /app and runs
