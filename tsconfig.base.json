@@ -15,6 +15,10 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
+    // TypeScript 7 no longer pulls in every @types package automatically.
+    // Declaring it is also faster and deterministic — a stray @types package in
+    // the tree can no longer change what compiles.
+    "types": ["node"],
     "resolveJsonModule": true,
     "isolatedModules": true,
     // Relative imports are written with `.ts` (what Node's type stripping wants)

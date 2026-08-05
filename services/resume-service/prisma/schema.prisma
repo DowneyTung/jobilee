@@ -9,7 +9,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("RESUME_DATABASE_URL")
+  // The URL lives in prisma.config.ts (CLI) and the driver adapter (client);
+  // Prisma 7 no longer accepts it here.
 }
 
 /// One editable base resume per user; everything else is derived from it.

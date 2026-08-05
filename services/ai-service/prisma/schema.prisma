@@ -10,7 +10,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("AI_DATABASE_URL")
+  // The URL lives in prisma.config.ts (CLI) and the driver adapter (client);
+  // Prisma 7 no longer accepts it here.
 }
 
 enum TaskType {

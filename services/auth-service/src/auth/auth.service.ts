@@ -7,7 +7,7 @@ import type {
   User,
 } from "@jobilee/shared-types";
 import { hash, verify } from "@node-rs/argon2";
-import { Prisma, type User as UserRow } from "../../generated/prisma/index.js";
+import type { User as UserRow } from "../../generated/prisma/index.js";
 import { AppError } from "@jobilee/service-kit";
 import { PrismaService } from "../prisma/prisma.service.ts";
 import { TokensService } from "./tokens.service.ts";
@@ -22,6 +22,20 @@ const ARGON2_OPTIONS = {
   timeCost: 2,
   parallelism: 1,
 } as const;
+
+/**
+ * Prisma's unique-constraint violation. Matched on the error code rather than
+ * `instanceof`: the v7 client re-exports the error class through its runtime,
+ * where it no longer narrows, and class identity breaks anyway if two copies of
+ * the client are ever loaded.
+ */
+function isUniqueConstraintViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "P2002"
+  );
+}
 
 @Injectable()
 export class AuthService {
@@ -40,7 +54,7 @@ export class AuthService {
       });
     } catch (error) {
       // Let the unique index decide, rather than checking first and racing.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      if (isUniqueConstraintViolation(error)) {
         throw new AppError("CONFLICT", "an account with that email already exists");
       }
       throw error;
